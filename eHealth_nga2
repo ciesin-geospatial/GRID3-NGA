@@ -1,0 +1,113 @@
+# Author: Yanni Zhan
+# Date  : 06/19/2018
+# eHealth NGA data cleaning
+
+##########
+require(geosphere)
+require(rgeos)
+require(RecordLinkage)
+require(stringdist)
+require(stringr)
+require(rPraat)
+
+
+rm(list=ls())
+setwd("C:/Users/yzhan/Desktop/ehealth/data/for_eHealth/Nassarawa") #change to local directory as needed
+
+csv_list=list.files(pattern="*.csv")
+
+dir.create("./outputs",showWarnings=F)
+
+
+
+for (i in 1:length(csv_list)){
+  
+  ##### input
+  geos=read.csv(csv_list[i])
+  print(paste("Processing",csv_list[i]))
+  
+  geos$CHECK=NA
+  
+  if(dim(geos)[1]>1) {
+    
+    ##### geo-distance check
+    geos_coor=as.data.frame(cbind(geos$longitude, geos$latitude))
+    colnames(geos_coor)=c("x","y")
+    
+    geos_dist=distm(geos_coor)
+    diag(geos_dist)=NA
+    #geos_dist[geos_dist==0]=NA
+    #dist_min_test=apply(geos_dist,2,function(x) x[x<200])
+    dist_min=apply(geos_dist,2,na.rm=T,min)
+    dist_min_which=apply(geos_dist,2,which.min)
+    
+    dist_min_check=as.data.frame(cbind(dist_min_which,dist_min))
+    index=which(dist_min_check[,2]<=200)
+    
+    if(length(index)!=0) geos[index,]$CHECK="distance"
+    
+    
+    ##### fuzzy check
+    #levenshteinSim
+    geos$poi_name2=gsub("-"," ",geos$poi_name)
+    string_dist=sapply(tolower(as.character(geos$poi_name2)),levenshteinSim,
+                       tolower(as.character(geos$poi_name2)))
+    geos$poi_name2=NULL
+    diag(string_dist)=NA
+    
+    str_dist_min=apply(string_dist,2,na.rm=T,max)
+    str_dist_min_which=apply(string_dist,2,which.max)
+    
+    str_dist_min_check=as.data.frame(cbind(str_dist_min_which,str_dist_min))
+    index_str=which(str_dist_min_check[,2]>=0.8)
+    
+    
+    if(length(index_str)!=0) {
+      for(j in 1:length(index_str)){
+      if(is.na(geos[index_str[j],]$CHECK)) {
+        geos[index_str[j],]$CHECK="fuzzy"
+      } else {
+        geos[index_str[j],]$CHECK="distance,fuzzy"
+      }
+    }
+    }
+    
+    
+    ##### road start or end?
+    if(str_contains(tolower(csv_list[i]),"road")){
+      
+      #grep("(\\sstart|\\send|start\\s|end\\s)",tolower(geos$poi_name),value=T)
+      index_3=grep("(\\sstart|\\send|start\\s|end\\s)",tolower(geos$poi_name))
+      
+      if(length(index_3)!=0){
+        for(j in 1:length(index_3)){
+        if(is.na(geos[index_3[j],]$CHECK)) {
+          geos[index_3[j],]$CHECK="start-end"
+        } else if(geos[index_3[j],]$CHECK=="distance") {
+          geos[index_3[j],]$CHECK="distance,start-end"
+        } else if(geos[index_3[j],]$CHECK=="fuzzy"){
+          geos[index_3[j],]$CHECK="fuzzy,start-end"
+        } else {
+          geos[index_3[j],]$CHECK="distance,fuzzy,start-end"
+        }
+      }
+      }
+      
+      
+    } 
+    
+    
+    ##### output
+    write.csv(geos,paste0("./outputs/",substring(csv_list[i],1,nchar(csv_list[i])-4),"_output.csv"),row.names=F)
+   
+    
+  } else {
+    
+    ##### output
+    write.csv(geos,paste0("./outputs/",substring(csv_list[i],1,nchar(csv_list[i])-4),"_output.csv"),row.names=F)
+    
+  }
+  
+}
+
+# end
