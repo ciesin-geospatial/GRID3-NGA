@@ -1,2 +1,2 @@
-# GRID3
-GRID3 code
+# GRID3-NGA
+Code for data cleaning in NGA
