@@ -1,0 +1,52 @@
+# Methodology to support eHealth's POI geospatial data cleaning activities in Nigeria
+# Created by: CIESIN
+# Date: 7-1-2018
+# Last edited: 7-26-2018
+
+# 1 – File Management 
+
+# 1.1 – Download and unzip the csv files sent from eHealth into: \\[internal CIESIN's server path]
+
+# 2 – Data Preparation
+
+# 2.1 – Using R, run the script, eHealth_nga2_ES.R. This script loops through each csv and adds a column called “CHECK”, which identifies whether or not two points are within 200m of each other, have similar POI names, and for roads, if the words “start” and/or “end” appear in the name of the road. The script also creates an empty column called “CIESIN_notes”. 
+
+# 2.2 – Using Python, run the script, csv_to_featureclass.py, which converts each csv into a feature layer using the WGS 1984 coordinate system and organizes all feature layers into a geodatabase called “original”, located here: \\[internal CIESIN's server path]
+
+# 2.3 – In the \\[internal CIESIN's server path] data folder, make a copy of the “original” geodatabase and rename it to "edited". CIESIN staff will make edits to the feature layers in this geodatabase. Create an empty geodatabase and name it “final”. This temporarily empty geodatabase will eventually contain the final version of the edited layers once all features have been checked and verified.
+
+# 3 – POI Geospatial Visual Check (REPEAT THIS ENTIRE PROCESS FOR EACH POI)
+
+# 3.1 – Using ArcMap, add a POI feature layer to the table of contents as well as a base map. 
+
+# 3.2 – Open the POI layer’s attribute table and sort by the column "CHECK". For each point, the “CHECK” column will contain either “NA” or a key word that identifies that the point must be further investigated. For all points that have an “NA” in the “CHECK” column, mark “ok” in the CIESIN_notes column, unless:
+# * It refers to a road feature point, in which case each point will be visually inspected to verify the location of the point alongside a corresponding linear feature. If there is more than one feature nearby, the location will not be edited.
+# * It refers to a linear water body (e.g. stream or canal), in which case each point will be visually inspected to verify the location of the point alongside a corresponding linear feature. If there is more than one feature nearby, the location will not be edited.
+
+# 3.3 – Points that contain either the words “distance”, “fuzzy”, or “start-end” or any combination of these identifiers in the “CHECK” column, must be looked at individually. 
+# * “Distance” indicates that the point is located within 200m of another. Zoom into the point and observe the proximity of the nearest point. If the nearest point contains similar or the same attribute information, including a similar or same name, it is most likely a duplicate. However, use your best judgment. Keep the point that contains the greatest amount of correct information and delete the other(s). In the “CIESIN_notes” column of the point that was preserved, make a note of the deletion and also record the meta_instanceID of the deleted point. 
+# * “Fuzzy” indicates that the POI names of two or more points are similar. In the attribute table, observe the name of the point. Zoom into the point and check the POI names of any points around it. If a nearby point has a very similar or exact name, as well as similar attribute information, it may be a duplicate. Use your best judgment to decide whether or not to delete the point. If you delete the point, in the “CIESIN_notes” column of the point that was preserved, make a note of this deletion and also record the meta_instanceID of the deleted point. 
+# * “Start-end” applies only to the roads layer. If a road has “start” in its name, zoom into the road and determine if there is an “end” for that same road. If there is, delete the road with “start” in its name and keep the one with “end”. Record this deletion along with the meta_instanceID. 
+
+# 3.4 - Notes:
+# * Points that have cloud coverage and cannot be visually verified using ESRI imagery should be visualized using Google Earth and/or Bing imagery.
+# * When spelling errors are too obvious, manual edits will be pursued in the POI_name field. A note will be recorded under "CIESIN_notes".
+
+# 3.4 – Once all POIs have been visually checked and cleaned, have another team member review the edits and notes that were made. It is helpful to visualize both the original and edited POI feature layers together to help determine which points were deleted. If there are any errors or further edits, i.e. points to delete, make necessary corrections.
+
+# 3.5 – Copy the finalized feature layers from the edited.gdb into the final.gdb.
+
+# 4 – Data Finalization
+
+# 4.1 – Create a folder called for_eHealth here: \\[internal CIESIN's server path]
+
+# 4.2 – Using Python, run the script, featureclass_to_csv.py. This script loops through each feature class in the final.gdb and removes the “CHECK” column. It also converts each feature class into an excel file and organized them into the for_eHealth folder. 
+
+# 4.3 – Zip all excel files and copy and paste the zip file here. The zip file name should be: [name of state]_POI_edited.zip.
+
+# 4.4 – On the eHealth Africa Slack channel, share a link to the data on the google drive with the team. 
+
+
+
+
+
